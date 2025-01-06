@@ -29,19 +29,30 @@ class ChapterCard extends StatefulWidget {
 }
 
 class _ChapterCardState extends State<ChapterCard> {
-  int totalStars = 0;
+  int totalHearts = 0;
+  bool isLocked = true;
 
   @override
   void initState() {
     super.initState();
-    _loadTotalStars();
+    _loadData();
   }
 
-  Future<void> _loadTotalStars() async {
+  Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
-      totalStars = prefs.getInt('totalStars') ?? 0;
+      totalHearts = prefs.getInt('totalHearts') ?? 0;
+      isLocked = prefs.getBool('chapter_${widget.chapter.number}_locked') ??
+          totalHearts < widget.chapter.heartsRequired;
     });
+  }
+
+  Future<void> _updateLockState() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isLocked = totalHearts < widget.chapter.heartsRequired;
+    });
+    await prefs.setBool('chapter_${widget.chapter.number}_locked', isLocked);
   }
 
   void _showLockedDialog(BuildContext context) {
@@ -61,7 +72,7 @@ class _ChapterCardState extends State<ChapterCard> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // إغلاق النافذة المنبثقة
+                Navigator.of(context).pop();
               },
               child: Text("حسناً"),
             ),
@@ -75,8 +86,6 @@ class _ChapterCardState extends State<ChapterCard> {
   Widget build(BuildContext context) {
     int completedCourses = 0;
     int totalCourses = widget.chapter.courses.length;
-
-    bool isLocked = totalStars < widget.chapter.heartsRequired;
 
     return Card(
       margin: EdgeInsets.all(10),
@@ -103,7 +112,7 @@ class _ChapterCardState extends State<ChapterCard> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // الجزء الأيسر
+                  // Left Section
                   Container(
                     alignment: Alignment.topLeft,
                     padding: EdgeInsets.symmetric(horizontal: 30, vertical: 5),
@@ -119,7 +128,7 @@ class _ChapterCardState extends State<ChapterCard> {
                       ),
                     ),
                   ),
-                  // الجزء الأيمن
+                  // Right Section
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
@@ -146,10 +155,9 @@ class _ChapterCardState extends State<ChapterCard> {
                           ElevatedButton(
                             onPressed: isLocked
                                 ? () {
-                                    _showLockedDialog(context); //
+                                    _showLockedDialog(context);
                                   }
                                 : () {
-                                    //
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
