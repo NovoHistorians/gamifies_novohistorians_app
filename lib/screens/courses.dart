@@ -71,18 +71,17 @@ class _CoursesState extends State<Courses> {
 
   // Check if a course is locked based on SharedPreferences
   // Check if a course is locked based on SharedPreferences
-Future<bool> _isCourseLocked(String courseTitle) async {
-  final prefs = await SharedPreferences.getInstance();
+  Future<bool> _isCourseLocked(String courseTitle) async {
+    final prefs = await SharedPreferences.getInstance();
 
-  // If the course is the first chapter, it's unlocked by default
-  if (courses.isNotEmpty && courses.first.title == courseTitle) {
-    return false;
+    // If the course is the first chapter, it's unlocked by default
+    if (courses.isNotEmpty && courses.first.title == courseTitle) {
+      return false;
+    }
+
+    // Otherwise, check the lock status from SharedPreferences
+    return prefs.getBool('isLocked_$courseTitle') ?? true; // Default to locked
   }
-
-  // Otherwise, check the lock status from SharedPreferences
-  return prefs.getBool('isLocked_$courseTitle') ?? true; // Default to locked
-}
-
 
   // Unlock a course and save the status in SharedPreferences
   Future<void> _unlockCourse(String courseTitle) async {

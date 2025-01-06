@@ -103,80 +103,82 @@ class _QuizPageState extends State<QuizPage> {
       );
     });
   }
- Future<void> _grantHearts() async {
-      // Logic to grant hearts to the user
-      final prefs = await SharedPreferences.getInstance();
 
-      // Grant hearts only the first time
-      int currentHearts = prefs.getInt('totalHearts') ?? 0;
-      currentHearts += widget.course.heartsGranted;
-
-      // Save the updated hearts count
-      await prefs.setInt('totalHearts', currentHearts);
-    }
- Future<void> _nextQuestion() async {
-  Navigator.of(context).pop(); // Close the dialog
-  if (_currentQuestionIndex < widget.quiz.questions.length - 1) {
-    setState(() {
-      _currentQuestionIndex++;
-      _selectedChoice = null; // Reset selected choice for next question
-    });
-  } else {
-    // If it's the last question, calculate and show the completion dialog
-    _playSound('complete');
-    
-    // Calculate the stars awarded
-    int starsAwarded =
-        (_score / widget.quiz.questions.length * widget.course.starsGranted)
-            .round();
-
-    // Get the stored earned stars from SharedPreferences using course title
+  Future<void> _grantHearts() async {
+    // Logic to grant hearts to the user
     final prefs = await SharedPreferences.getInstance();
-    int currentEarnedStars =
-        prefs.getInt('earnedStars_${widget.course.title}') ?? 0;
 
-    // Compare and update only if starsAwarded > currentEarnedStars
-    if (starsAwarded > currentEarnedStars) {
-      int difference = starsAwarded - currentEarnedStars;
+    // Grant hearts only the first time
+    int currentHearts = prefs.getInt('totalHearts') ?? 0;
+    currentHearts += widget.course.heartsGranted;
 
-      // Save the new earned stars for this course in SharedPreferences
-      await prefs.setInt('earnedStars_${widget.course.title}', starsAwarded);
+    // Save the updated hearts count
+    await prefs.setInt('totalHearts', currentHearts);
+  }
 
-      // Update the total stars
-      await _saveTotalStars(difference);
+  Future<void> _nextQuestion() async {
+    Navigator.of(context).pop(); // Close the dialog
+    if (_currentQuestionIndex < widget.quiz.questions.length - 1) {
+      setState(() {
+        _currentQuestionIndex++;
+        _selectedChoice = null; // Reset selected choice for next question
+      });
     } else {
-      // No changes needed if awarded stars are less than or equal to earned stars
-      await _saveTotalStars(0);
-    }
+      // If it's the last question, calculate and show the completion dialog
+      _playSound('complete');
 
-    // Check if this is the first time completing the course
-    bool hasCompletedBefore = prefs.getBool('courseCompleted_${widget.course.title}') ?? false;
+      // Calculate the stars awarded
+      int starsAwarded =
+          (_score / widget.quiz.questions.length * widget.course.starsGranted)
+              .floor();
 
-    if (!hasCompletedBefore) {
-      // Grant hearts if it's the first completion
-      await prefs.setBool('courseCompleted_${widget.course.title}', true);
-      await _grantHearts();
+      // Get the stored earned stars from SharedPreferences using course title
+      final prefs = await SharedPreferences.getInstance();
+      int currentEarnedStars =
+          prefs.getInt('earnedStars_${widget.course.title}') ?? 0;
 
-      // Navigate to the reward screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => RewardRedemptionScreen(
-            earnedHearts: widget.course.heartsGranted,
+      // Compare and update only if starsAwarded > currentEarnedStars
+      if (starsAwarded > currentEarnedStars) {
+        int difference = starsAwarded - currentEarnedStars;
+
+        // Save the new earned stars for this course in SharedPreferences
+        await prefs.setInt('earnedStars_${widget.course.title}', starsAwarded);
+
+        // Update the total stars
+        await _saveTotalStars(difference);
+      } else {
+        // No changes needed if awarded stars are less than or equal to earned stars
+        await _saveTotalStars(0);
+      }
+
+      // Check if this is the first time completing the course
+      bool hasCompletedBefore =
+          prefs.getBool('courseCompleted_${widget.course.title}') ?? false;
+
+      if (!hasCompletedBefore) {
+        // Grant hearts if it's the first completion
+        await prefs.setBool('courseCompleted_${widget.course.title}', true);
+        await _grantHearts();
+
+        // Navigate to the reward screen
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (context) => RewardRedemptionScreen(
+              earnedHearts: widget.course.heartsGranted,
+            ),
           ),
-        ),
-      );
-    } else {
-      // Show completion dialog if course was completed before
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => _buildCompletionDialog(starsAwarded),
-      );
+        );
+      } else {
+        // Show completion dialog if course was completed before
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => _buildCompletionDialog(starsAwarded),
+        );
+      }
     }
   }
-}
-
 
   Widget _buildCustomDialog(bool isCorrect) {
     return Dialog(
